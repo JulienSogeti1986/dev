@@ -1,0 +1,102 @@
+---
+
+
+- name: This sets up a mysql dbserver
+
+  hosts: demoserver1
+  remote_user: root
+
+  tasks:
+
+
+################## INSTALLATION DB ###############################
+
+  - name: Install MySQL Software Repo
+    yum:
+      name: http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm
+      state: present
+
+  - name: Install MySQL Database and MySQL-python
+    yum: name={{ item }} state=present
+    with_items:
+     - mysql-server
+     - MySQL-python
+
+  - name: Start & Enable MySQL Server to start on boot
+    service: name=mysqld state=started enabled=yes
+
+  - name: desactiver SELinux
+    shell: "setenforce 0"
+
+  - name: desactiver firewall
+    shell: "systemctl stop firewalld"
+
+  - name: Create database user with name 'dbuser' and password 'upassword' with all database privileges
+    mysql_user:
+
+      name: '{{ dbuser }}'
+      password: '{{ upassword }}'
+      priv: '*.*:ALL'
+      state: present
+
+  - name: Copy database dump file to remote host
+    copy:
+      src: ./webfiles/creation.sql
+      dest: /tmp
+
+  - name: supprime une éventuelle BDD "stage"
+    mysql_db:
+      name: "{{ dbname }}"
+      state: absent
+
+  - name: Create the database "stage" with init with stage.sql for website
+    mysql_db:
+      name: "{{ dbname }}"
+      state: import
+      target: /tmp/creation.sql
+
+######################## INSTALLATION HTTPD  #########################
+
+  - name: Install apache packages 
+    yum:
+      name: httpd
+      state: present
+
+  - name: Install httpd and php
+    yum: name={{ item }} state=present
+    with_items:
+     - php
+     - php-mysql
+
+  - name: ensure httpd is running
+    service:
+      name: httpd 
+      state: started
+
+  - name: Open port 80 for http access
+    firewalld:
+      service: http
+      permanent: true
+      state: enabled
+
+  - name: Create mysite directory if not exists
+    file: path=/var/www/html/webfiles/ state=directory
+
+#  - name: Copie du dossier webfiles/ to the distant server
+#    copy:
+#      src: ./webfiles
+#      dest: /var/www/html/
+
+#  - name: Ansible Template Example
+#    template:
+#      src: param.php.j2
+#      dest: /var/www/html/webfiles/param.php
+
+  - name: Copy mysite web files to the webserver
+    template: src={{ item.src }} dest={{ item.dest }}
+    with_items:
+     - { src: './webfiles/affichage.php.j2', dest: '/var/www/html/webfiles/affichage.php' }
+
+   
+     
+

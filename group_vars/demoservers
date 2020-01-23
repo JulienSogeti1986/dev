@@ -1,0 +1,8 @@
+---
+# Database system variables
+mysqlservice: mysqld
+mysql_port: 3306
+dbuser: julien
+dbname: train
+upassword: password
+masterpassword: passwordroot

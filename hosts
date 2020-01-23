@@ -1,0 +1,7 @@
+[demoservers]
+demoserver1 ansible_host=10.69.8.33
+
+[prodservers]
+prodserver1 ansible_host=10.69.8.112
+
+
